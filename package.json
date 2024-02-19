@@ -1,0 +1,8 @@
+{
+  "scripts": {
+    "install:backend": "npm install && cd DeliverUS-Backend && npm install",
+    "migrate:backend": "cd DeliverUS-Backend && npm run migrate",
+    "test:backend": "npm run migrate:backend && cd DeliverUS-Backend && npm test",
+    "start:backend": "cd DeliverUS-Backend && npm start"
+  }
+}
