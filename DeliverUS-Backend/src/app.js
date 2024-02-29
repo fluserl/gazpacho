@@ -2,10 +2,12 @@ import express from 'express'
 import dotenv from 'dotenv'
 import loadRoutes from './routes/index.js'
 import { initSequelize, disconnectSequelize } from './config/sequelize.js'
+import loadGlobalMiddlewares from './middlewares/GlobalMiddlewaresLoader.js'
 
 const initializeApp = async () => {
   dotenv.config()
   const app = express()
+  loadGlobalMiddlewares(app)
   loadRoutes(app)
   app.connection = await initializeDatabase()
   await postInitializeDatabase(app)

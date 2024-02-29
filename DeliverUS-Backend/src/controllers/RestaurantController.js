@@ -1,4 +1,4 @@
-import { Restaurant, RestaurantCategory } from '../models/models.js'
+import { Restaurant, Product, RestaurantCategory, ProductCategory } from '../models/models.js'
 
 const index = async function (req, res) {
   try {
@@ -19,7 +19,29 @@ const index = async function (req, res) {
   }
 }
 
+// TODO: Complete the following functions
+
+const create = async function (req, res) {
+
+}
+
+const show = async function (req, res) {
+
+}
+
+const update = async function (req, res) {
+
+}
+
+const destroy = async function (req, res) {
+
+}
+
 const RestaurantController = {
-  index
+  index,
+  create,
+  show,
+  update,
+  destroy
 }
 export default RestaurantController
