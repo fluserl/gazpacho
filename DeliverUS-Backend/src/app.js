@@ -1,6 +1,7 @@
 import express from 'express'
 import dotenv from 'dotenv'
 import loadRoutes from './routes/index.js'
+import { initPassport } from './config/passport.js'
 import { initSequelize, disconnectSequelize } from './config/sequelize.js'
 import loadGlobalMiddlewares from './middlewares/GlobalMiddlewaresLoader.js'
 
@@ -9,6 +10,7 @@ const initializeApp = async () => {
   const app = express()
   loadGlobalMiddlewares(app)
   loadRoutes(app)
+  initPassport()
   app.connection = await initializeDatabase()
   await postInitializeDatabase(app)
   return app

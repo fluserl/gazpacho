@@ -1,7 +1,12 @@
 # Introduction
-We will learn how to define and implement the Endpoints of our backend and how endpoints are handled by Controllers (from the MVC pattern). Controllers run some parts of the business logic of our application.
+We will learn how to define and implement the validation middleware and others on our backend Node.js Apps. Middlewares are intented to run some specific parts of our business logic such as:
+* Validation of data from clients (the software that performs operations against the backend).
+* Checking authorization. 
+* Checking permissions.
+* Checking ownership of resources.
 
-Secondly, we will learn how an ORM software tool (the _Sequelize_ package) will help us performing operations on the Maria Database from these controllers.
+Secondly, we will learn how a Validation package will help us performing validation of data coming from clients.
+
 ## Prerequisites
 * Keep in mind we are developing the backend software needed for DeliverUS project. Please, read project requirements found at:  https://github.com/IISSI2-IS-2024
   * The template project includes EsLint configuration so it should auto-fix formatting problems as soon as a file is saved.
@@ -17,11 +22,11 @@ Click on "Use this template" in GitHub and "Create a new repository" to create y
 git clone <url>
 ```
 
-Alternatively, you can use the *Source Control* button in the left-sided bar and click on *Clone Repository* button. 
+Alternatively, you can use the *Source Control* button in the left-sided bar and click on *Clone Repository* button.
 
 In case you are asked if you trust the author, please select yes.
 
-It may be necessary to setup your git username by running the following commands on your terminal, in order to be able to commit and push:
+It may be necessary to setup your git username by running the following commands on your terminal:
 ```PowerShell
 git config --global user.name "FIRST_NAME LAST_NAME"
 git config --global user.email "MY_NAME@example.com"
@@ -33,9 +38,10 @@ Open a terminal a run `npm run install:backend` to install dependencies. A folde
 
 ## 2. Remember project structure
 
-All the elements related to the backend subsystem are located in `DeliverUS-Backend` folder. You will find the following elements (during this lab we will focus our attention on the `routes` and `controllers` folders):
-* **`src/routes` folder: where URIs are defined and referenced to middlewares and controllers**
-* **`src/controllers` folder: where business logic is implemented, including operations to the database**
+All the elements related to the backend subsystem are located in `DeliverUS-Backend` folder. You will find the following elements (during this lab we will focus our attention on the `middlewares` and `controllers/validation` folders):
+
+* **`src/middlewares` folder: various checks needed such as authorization, permissions and ownership.**
+* **`src/controllers/validation` folder: validation of data included in client requests. One validation file for each entity**
 * `package.json`: scripts for running the server and packages dependencies including express, sequelize and others. This file is usally created with `npm init`, but you can find it already in your cloned project.
     * In order to add more package dependencies you have to run `npm install packageName --save` or `npm install packageName --save-dev` for dependencies needed only for development environment. To learn more about npm please refer to [its documentation](https://docs.npmjs.com/cli/v7/commands/npm).
 * `package-lock.json`: install exactly the same dependencies in futures deployments. Notice that dependencies versions may change, so this file guarantees to download and deploy the exact same tree of dependencies.
@@ -45,144 +51,154 @@ All the elements related to the backend subsystem are located in `DeliverUS-Back
 * `src/database` folder: where all the logic for creating and populating the database is located
     * `src/database/migrations` folder: where the database schema is defined
     * `src/database/seeders` folder: where database sample data is defined
-* `src/controllers/validation` folder: validation of data included in client requests. One validation file for each entity
-* `src/middlewares` folder: various checks needed such as authorization, permissions and ownership.
+* `src/routes` folder: where URIs are defined and referenced to middlewares and controllers
+* `src/controllers` folder: where business logic is implemented, including operations to the database
+
+
 * `src/config` folder: where some global config files are stored (to run migrations and seeders from cli)
 * `src/test` folder: will store unit test requests to our Rest API, using the [SuperTest](https://www.npmjs.com/package/supertest) module.
 
 
-## 3. Routes
-Backend software can publish its functionalities through RESTFul services. These services follows the architectural patterns of the HTTP protocol. DeliverUS functionalities are explained at https://github.com/IISSI2-IS-2024#functional-requirements
+## 3. Middlewares and validation middleware.
+You will find middlewares at `DeliverUS-Backend/src/middlewares` folder. One for each entity, one for checking if a given id identifies a record of a given entity in the database, and another for authentication/authorization.
 
-As an example, if the system provides CRUD operations over an entity, there should be an endpoint for each operation. HTTP POST endpoint to Create, HTTP GET to Read, HTTP PUT|PATCH to Update and HTTP DELETE to Delete.
+At `AuthMiddleware.js` file you will find two functions:
+* `isLoggedIn` checks if the user is logged in (the request includes a valid bearer token).
+*  `hasRole` receives an array of roles names and check if the logged-in user has the needed role.
 
-Routes are usually created following some common patterns and good practices. For instance, for the CRUD operations on the Restaurant entity:
-* `HTTP POST /restaurants` to **C**reate a restaurant. The controller method typically is named as `create`
-* `HTTP GET /restaurants` to **R**ead all restaurants. The controller method typically is named as `index`
-* `HTTP GET /restaurants/{restaurantId}` to **R**ead details of the restaurant with id=restaurantId (a path param). The controller method typically is named as `show`
-* `HTTP PUT /restaurants/{restaurantId}` to **U**pdate details of the restaurant with id=restaurantId (a path param). The controller method typically is named as `update`
-* `HTTP DELETE /restaurants/{restaurantId}` to Delete the restaurant with id=restaurantId (a path param). The controller method typically is named as `destroy`
+At `EntityMiddleware.js` file you will find a function:
+* `checkEntityExists` checks, for a given id and entity, if there exists a record in the corresponding table in the database that matches such id, and in case that the record does not exist, it returns the 404 HTTP status code.
 
-Moreover, and endpoint may define some query params. These are usually intended to include some optional parameters in the request, such as implementing a search over the entity. For instance, if we want to query the orders filtered by status, a `status` query param should be defined.
+At `ValidationHandlingMiddleware.js` file you will find a function:
+* `handleValidation` checks the result from express-validator and if an error is found, returns 422 (Validation error) and stops the validation procedure.
 
-### 3.1. Restaurant routes definition
-In order to define routes in an _Express Node.js_ application, we have to follow the following template:
+At `FileHandlerMiddleware.js` file you will find a function:
+* `handleFilesUpload` receives an array of field names, corresponding to file-type attributes for an entity, as well as the base path of the server where these files must be stored. It is responsible for managing the upload of the files to the server, including the generation of a unique name for each file and the storage of the full paths in the corresponding fields of the entity.
+
+For instance, when a user sends a request for creating a new product we will middleware components to:
+* check the user is logged in
+* check the user has the role owner (since customers cannot create products)
+* manage the upload of the image of the product
+* check the product belongs to a restaurant the he/she owns (data includes a restaurantId which belongs to the owner that makes the request)
+* check the product data include valid values for each property in order to be created according to our information requirements.
+
+In order to check all these requirements, we have to include each middleware method in the corresponding route:
 ```Javascript
-app.route('/path') //the endpoint path
-    .get( //the http verb that we want to be available at the previous path
-      EntityController.index) // the function that will attend requests for that http verb and that path
-    .post( //we can chain more http verbs for the same endpoint
-      EntityController.create) // the function that will attend requests for that http verb and that path
-````
-
-DeliverUS project organizes its routes in the `src/routes` folder. We define routes for each entity in its own file. For instance, restaurant routes will be defined in the `RestaurantRoutes.js` file.
-
-Complete the file `RestaurantRoutes.js` in order to define the endpoints for the following functional requirements:
-* Customer functional requirements:
-  * FR1: Restaurants listing: Customers will be able to query all restaurants.
-  * FR2: Restaurants details and menu: Customers will be able to query restaurants details and the products offered by them.
-
-* Owner functional requirements:
-  * FR1: To Create, Read, Update and Delete (CRUD) Restaurants: Restaurantes are related to an owner, so owners can perform these operations to the restaurants owned by him. If an owner creates a Restaurant, it will be automatically related (owned) to him.
-
-
-## 4. Controllers.
-Controllers are the main components of the business logic layer. Functionalities and business rules may be implemented on controllers specially according to the MVC architectural pattern. DeliverUS project organizes its controllers in the `src/controllers` folder. We define controllers for the business logic related to each entity in its own file. For instance, restaurant controller will be defined in the `RestaurantController.js` file.
-
-Each controller method receives a request `req` and a response `res` object. Request object _represents the HTTP request and has properties for the request query string, parameters, body, HTTP headers, and so on_ (see https://expressjs.com/en/4x/api.html#req for more details).
-In our project we will need the following attributes from the request:
-* `req.body` represents the data that comes from the client (usually a JSON document or the a form sent as multipart/form-data when files are needed).
-* `req.params` represents path params. For instance if we defined a `:restaurantId` param, we will have access to it by `req.params.restaurantId`.
-* `req.query` represents query params. For instance, if a request includes a `status` query param, it will be accessed by `req.query.status`.
-* `req.user` represents the logged in user that made the request. We will learn more about this in lab3.
-
- Response object _represents the HTTP response that an Express app sends when it gets an HTTP request_ (see https://expressjs.com/en/4x/api.html#res.
-In our project we will need the following methods from the `res` object:
-* `res.json(entityObject)` returns the object `entityObject` to the client as a JSON document with the HTTP 200 status code. For instance: `res.json(restaurant)` will return the restaurant object as json document.
-* `res.json(message)` returns a string `message` to the client as a JSON document with HTTP 200 status code.
-* `res.status(500).send(err)` returns the `err` object (typically including some kind of error message) and a HTTP 500 status code to the client.
-
-HTTP Code status used in this project are:
-* `200`. Requests attended successfully.
-* `401`. Wrong credentials.
-* `403`. Request forbidden (not enough privileges).
-* `404`. Requested resource was not found.
-* `422`. Validation error.
-* `500`. General error.
-
-For more information about HTTP Status code see: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status
-
-### 4.1. Restaurant controller methods.
-#### 4.1.1 Create method to Create entity
-Typically, we expect that the body of the req includes a JSON document with all the needed information to create a new element of the entity. To access this document we use the `req.body` attribute.
-
-Sequelize offers a way of creating new elements, the `Model.build` method that receives a JSON object that includes the needed fields for buliding a new element and then a `Model.save` method to store it in the corresponding database table.
-
-For the RestaurantController we can do this by using the following snippets:
-```Javascript
-const newRestaurant = Restaurant.build(req.body)
+app.route('/products')
+    .post(
+      isLoggedIn,
+      hasRole('owner'),
+      handleFilesUpload(['image'], process.env.PRODUCTS_FOLDER),
+      ProductValidation.create,
+      handleValidation,
+      ProductMiddleware.checkProductRestaurantOwnership,
+      ProductController.create
+    )
 ```
-Then, we have to include the logged in owner as the restaurant userId. Notice that until next lab, the system does not implement authentication, so we will temporarily include a fixed value for the userId. We will fix this next lab.
+
+### 3.1. Validation middlewares
+Validation middlewares are intended to check if the data that comes in a request fulfills the information requirements. Most of this requirements are defined at the database level, and were included when creating the schema on the migration files. Some other requirements, are checked at the application layer. For instance, if you want to create a new restaurant, some images can be provided: logo image and hero image. These files should be image files and its size should be less than 10mbs. In order to check these other requirements we will use the `express-validator` package. **It is a good practice to make a complete validation using `express-validator` regardless if such validation is partially included in the database or not.**
+
+Notice that we will create an array of rules for each endpoint that would require validation, usually a `create` array of rules for creating new data and an `update` array of rules for updating data.
+
+More info about **using** middlewares can be found at Express documentation: https://expressjs.com/en/guide/using-middleware.html
+
+More info about **writing** middlewares can be found at Express documentation: https://expressjs.com/en/guide/writing-middleware.html
+
+### 3.2. Defining middlewares and validation middlewares for Restaurant routes
+Open the file `DeliverUS-Backend/src/routes/RestaurantRoutes.js`. You will find that routes are defined, but it is needed to define which middlewares will be called for each route.
+
+Include middlewares needed for Restaurant routes according to the requirements of Deliverus project. For each route you should determine if:
+* is it needed that a user is logged in?
+* is it needed that the user has a particular role?
+* may the data include files? 
+* is it needed that the restaurant belongs to the logged-in user? (restaurant data should include a userId which belongs to the owner of that restaurant)
+* is it needed that the restaurant data include valid values for each property in order to be created according to our information requirements?
+
+
+### 3.3. Implement validation middleware for Restaurant create()
+Open the file `controllers/validation/RestaurantValidation.js`. You will find the arrays of rules for validating data when creating `create` and when updating `update`.
+Restaurant properties are defined at database level. You can check the corresponding migration. Some validations are done at the app level, for instance we will include validations to check that email data is a valid email.
+
+Moreover, it is common to apply some sanitizing over data. For instance, to remove blank spaces at the beginning and at the end of string values we can use the `trim()` method. 
+
+In order to add validations, follow this snippet:
 ```Javascript
- // newRestaurant.userId = req.user.id // authenticated user
- newRestaurant.userId = 1
+const create = [
+  check('name').exists().isString().isLength({ min: 1, max: 255 }).trim(),
+  check('description').optional({ nullable: true, checkFalsy: true }).isString().trim(),
+  check('shippingCosts').exists().isFloat({ min: 0 }).toFloat(),
+  check('heroImage').custom((value, { req }) => {
+    return checkFileIsImage(req, 'heroImage')
+  }).withMessage('Please upload an image with format (jpeg, png).'),
+  check('heroImage').custom((value, { req }) => {
+    return checkFileMaxSize(req, 'heroImage', maxFileSize)
+  }).withMessage('Maximum file size of ' + maxFileSize / 1000000 + 'MB'),
+  check('logo').custom((value, { req }) => {
+    return checkFileIsImage(req, 'logo')
+  }).withMessage('Please upload an image with format (jpeg, png).'),
+  check('logo').custom((value, { req }) => {
+    return checkFileMaxSize(req, 'logo', maxFileSize)
+  }).withMessage('Maximum file size of ' + maxFileSize / 1000000 + 'MB')
+  // TODO: Complete validations
+  ], update:[
+    ...
+  ]
+
 ```
-Finally, we can save the new created restaurant. Our `newRestaurant` variable is built, but not saved. To this end, sequelize offers a `save` method for each model. As this is an I/O operation, we don't want to block the system, so the save method returns a promise. We will use the await/async syntax to make our code more readable. We can use the following snippet:
+
+Complete validations for the rest of the fields in Restaurant entity: `address`, `postalCode`, `url`, `email`, `phone`, `restaurantCategoryId` and `userId`.
+
+For a comprehensive list of validations methods, see https://github.com/validatorjs/validator.js#validators, and for a comprehensive list of sanitizing methods, see https://github.com/validatorjs/validator.js#sanitizers
+
+
+### 3.4. Check validation in controllers
+When validation fails, it is passed to the following middleware method in the middleware chain. In this case, the next method should be the validation handler method which will be always executed after the validation middleware.
+
+Within the `handleValidation` method, we can check if any validation rule has been violated, and return the appropriate response. To this end, the `handleValidation` method includes the following code:
+
 ```Javascript
-try {
-  const restaurant = await newRestaurant.save()
-  res.json(restaurant)
-} catch (err) {
-    res.status(500).send(err)
+const handleValidation = async (req, res, next) => {
+  const err = validationResult(req)
+  if (err.errors.length > 0) {
+    res.status(422).send(err)
+  } else {
+    next()
+  }
 }
 ```
 
-#### 4.1.2 Index methods to Read entity.
-
-Implement the FR1: Restaurants listing: Customers will be able to query all restaurants. To this end, you can use the Sequelize `Model.findAll` method.
-
-#### 4.1.3 Show methods to return entity details.
-
-Implement the FR2: Restaurants details and menu: Customers will be able to query restaurants details and the products offered by them.
-To this end, you will receive a `req.params.restaurantId` identifying the restaurant. You can use the Sequelize `Model.findByPk` method.
-Notice that you will need to include its products and its restaurant category. Remember that products should be sorted according to the order field value. You can use the following code snippet to perform the query:
-```Javascript
-const restaurant = await Restaurant.findByPk(req.params.restaurantId, {
-  attributes: { exclude: ['userId'] },
-  include: [{
-    model: Product,
-    as: 'products',
-    include: { model: ProductCategory, as: 'productCategory' }
-  },
-  {
-    model: RestaurantCategory,
-    as: 'restaurantCategory'
-  }],
-  order: [[{model:Product, as: 'products'}, 'order', 'ASC']],
-}
-)
-```
-
-Next, return the restaurant by using `res.json()` method that receives the object to be returned. Surround this code with the corresponding try and catch In case that an exception is raised, you should return the HTTP status code 500 in the catch block by using the methods `res.status(httpCode).send(error)`.
-
-#### 4.1.4 Update method to modify entity.
-
-Use the `Model.update` method. In case of success, you should return the updated restaurant element by querying the database (using the method `findByPk`) after the update.
-This method follows the same steps that when creating a restaurant.
-
-#### 4.1.5 Destroy method to remove entity.
-Use the `Model.destroy` method. You need to specify a where clause to remove only the restaurant identified by `req.params.restaurantId` . Destroy returns the number of destroyed elements. Return an info message.
-
-## 5. Test Restaurant routes and controllers
+## 4. Test Restaurant routes, controllers and middlewares
 
 Open a terminal and run:
 ```
 npm run test:backend
 ```
 
-By now, only the restaurant routes are tested. We will add more tests in following labs.
+In this project, tests are included for all the functional requirements of the complete backend, including those related to owners and customers. Since some of these requirements must be implemented by students as part of the deliverable project, you will notice that running the tests yields many failures.
 
-# References
-* Node.js docs: https://nodejs.org/en/docs/
-* Express docs: https://expressjs.com/
-* Sequelize docs: https://sequelize.org/master/manual/getting-started.html
+In preparation for this lab, you must ensure that all the restaurant tests are passed. You can consult a summary of the test runs in the file `tests/e2e/testResults.csv`. When you tackle the implementation of the functional requirements related to the client side in the context of the deliverable project, you must ensure that all tests are passed.
+
+## A. Annex about transactions
+Some database operations should be enclosed in a database transaction. This is useful when it is needed to ensure that several operations are successfully executed in the database, and in case that any of them raise an exception, undo all the previous operations. For instance, to create an `Order` it is needed to insert a record in the `Orders` table and to insert several records in the `OrderProducts` table. This must be done in a transaction.
+
+To create a transaction by using Sequelize, you can follow this sample code snippet:
+
+```Javascript
+const models = require('../models')
+const EntityName = models.EntityName
+
+const someFunctionThatNeedsTransaction = async (req, res) => {
+  let newEntity = EntityName.build(req.body)
+  const transaction = await models.sequelize.transaction() //creates a transaction
+  try {
+    newEntity = await newEntity.save({transaction}) //use the transaction in every operation
+    await newEntity.addRelatedEntity(relatedEntityId, { through: { associatedAttribute1: value1, associatedAttributeN: valueN }, transaction }) //adding associated element through an association table
+    await transaction.commit() //confirm all operations
+    res.json(newEntity)
+  } catch (err) {
+    await transaction.rollback() //in case of error, rollback all the operations executed in the context of the transaction
+    res.status(500).send(err)
+  }
+}
+```
