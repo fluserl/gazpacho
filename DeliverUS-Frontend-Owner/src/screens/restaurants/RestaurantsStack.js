@@ -19,7 +19,7 @@ export default function RestaurantsStack () {
         component={RestaurantDetailScreen}
         options={{
           title: 'Restaurant Detail'
-        }} />
+                }}/>
     </Stack.Navigator>
   )
 }
