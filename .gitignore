@@ -103,10 +103,9 @@ dist
 # TernJS port file
 .tern-port
 .DS_Store
-*/public/avatars/*
-*/public/restaurantImages/*
-*/public/restaurants/*
-*/tests/e2e/results/*
+public/avatars/*
+public/restaurantImages/*
+public/restaurants/*
 
 .expo/
 dist/

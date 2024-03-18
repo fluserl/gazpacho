@@ -23,20 +23,6 @@
             "name": "Debug Frontend",
             "url": "http://localhost:19006",
             "webRoot": "${workspaceFolder}"
-        },
-        {
-            "type": "node",
-            "request": "launch",
-            "name": "Jest: current file",
-            "program": "${workspaceFolder}/DeliverUS-Backend/node_modules/.bin/jest",
-            "args": ["--detectOpenHandles","${fileBasenameNoExtension}"],
-            "runtimeArgs": ["--experimental-vm-modules"],
-            "console": "integratedTerminal",
-            "disableOptimisticBPs": true,
-            "cwd": "${workspaceFolder}/DeliverUS-Backend",
-            "windows": {
-                "program": "${workspaceFolder}/DeliverUS-Backend/node_modules/jest/bin/jest"
-            }
         }
     ]
 }
