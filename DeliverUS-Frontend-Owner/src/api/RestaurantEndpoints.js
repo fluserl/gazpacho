@@ -1,4 +1,4 @@
-import { get } from './helpers/ApiRequestsHelper'
+import { get, post } from './helpers/ApiRequestsHelper'
 function getAll () {
   return get('users/myrestaurants')
 }
@@ -11,4 +11,8 @@ function getRestaurantCategories () {
   return get('restaurantCategories')
 }
 
-export { getAll, getDetail, getRestaurantCategories }
+function create (data) {
+  return post('restaurants', data)
+}
+
+export { getAll, getDetail, getRestaurantCategories, create }

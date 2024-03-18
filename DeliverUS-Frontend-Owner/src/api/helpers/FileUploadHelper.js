@@ -77,16 +77,15 @@ function prepareData (preparedData) {
   return { config, preparedData }
 }
 
-
 const prepareEntityImages = (entity, imagePropertyNames) => {
   const entityCopy = { ...entity }
   imagePropertyNames.forEach(impagePropertyName => {
     if (entityCopy[impagePropertyName]) {
-      entityCopy[impagePropertyName] = { assets: [{uri : `${process.env.API_BASE_URL}/${entityCopy[impagePropertyName]}`}]}
+      entityCopy[impagePropertyName] = { assets: [{ uri: `${process.env.API_BASE_URL}/${entityCopy[impagePropertyName]}` }] }
     }
   })
 
   return entityCopy
 }
 
-export { normalizeFile, getDataWithoutBodyFiles, getFilesFromData, constructFormData, getMultiPartHeader, prepareData, prepareEntityImages}
+export { normalizeFile, getDataWithoutBodyFiles, getFilesFromData, constructFormData, getMultiPartHeader, prepareData, prepareEntityImages }

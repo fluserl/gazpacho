@@ -14,21 +14,8 @@ export default function RestaurantDetailScreen ({ navigation, route }) {
   const [restaurant, setRestaurant] = useState({})
 
   useEffect(() => {
-    async function fetchRestaurantDetail () {
-      try {
-        const fetchedRestaurant = await getDetail(route.params.id)
-        setRestaurant(fetchedRestaurant)
-      } catch (error) {
-        showMessage({
-          message: `There was an error while retrieving restaurant details (id ${route.params.id}). ${error}`,
-          type: 'error',
-          style: GlobalStyles.flashStyle,
-          titleStyle: GlobalStyles.flashTextStyle
-        })
-      }
-    }
     fetchRestaurantDetail()
-  }, [])
+  }, [route])
 
   const renderHeader = () => {
     return (
@@ -87,6 +74,20 @@ export default function RestaurantDetailScreen ({ navigation, route }) {
     )
   }
 
+  const fetchRestaurantDetail = async () => {
+    try {
+      const fetchedRestaurant = await getDetail(route.params.id)
+      setRestaurant(fetchedRestaurant)
+    } catch (error) {
+      showMessage({
+        message: `There was an error while retrieving restaurant details (id ${route.params.id}). ${error}`,
+        type: 'error',
+        style: GlobalStyles.flashStyle,
+        titleStyle: GlobalStyles.flashTextStyle
+      })
+    }
+  }
+
   return (
     <View style={styles.container}>
       <FlatList
@@ -97,6 +98,7 @@ export default function RestaurantDetailScreen ({ navigation, route }) {
         renderItem={renderProduct}
         keyExtractor={item => item.id.toString()}
       />
+
     </View>
   )
 }
@@ -157,5 +159,21 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     marginRight: 5,
     color: GlobalStyles.brandSecondary
+  },
+  actionButton: {
+    borderRadius: 8,
+    height: 40,
+    marginTop: 12,
+    margin: '1%',
+    padding: 10,
+    alignSelf: 'center',
+    flexDirection: 'column',
+    width: '50%'
+  },
+  actionButtonsContainer: {
+    flexDirection: 'row',
+    bottom: 5,
+    position: 'absolute',
+    width: '90%'
   }
 })
