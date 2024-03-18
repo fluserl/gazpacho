@@ -1,6 +1,6 @@
 # Introduction
 
-We will learn how to design screens by using FlexBox to create our Layout. Once we understand basic Flexbox, we will design our first Form screen to create Restaurants and secondly, to create Products.
+During this lab first, we will learn how to validate forms with formik and yup. Secondly, we will learn how to perform POST requests to the backend.
 
 # 0. Setup
 
@@ -33,625 +33,258 @@ You have to run the backend server as well. Go to your global project folder and
 
 You can then run `start:frontend`. Check that the base project is working.
 
-It is important to notice that **this base project includes**:
+It is important to notice that this base project includes:
 
-- Previous labs solved.
-- Added button to create restaurant, and navigates to CreateRestaurantScreen.
-- Added button to create product, and navigates to CreateProductScreen.
-- An InputItem component that renders forms inputs, labels and manages errors.
+- Previous labs solved, including creating restaurant and products forms (lacks from performing validation and requests to backend)
+- Needed packages for validate forms, Formik and yup, added to package.json
 
-Keep in mind that to make some API requests, it is needed to be logged-in. So **confirm that you can log-in with some owner user**. The provided user-seeder at the backend creates an owner with the following credentials:
+Keep in mind that to make some API requests, it is needed to be logged-in. So confirm that you can log-in with some owner user. The provided user-seeder at the backend creates an owner with the following credentials:
 
-- email: `owner1@owner.com`
-- password: `secret`
-
+email: owner1@owner.com
+password: secret
 Once the user is logged in, the bearer token is used in every request.
 
-# 1. GUI Design
+# 1. CreateRestaurant Form validation
 
-## 1.1. Flexbox
+Forms have to be validated at front-end before submission is done to backend. Validation should check if the filled data matches the requirements set in the various form inputs. For instance: an input for email should contain a valid email, or password should have a minimum size, or some input is required.
 
-React native components use Flexbox algorithm to define the layout of its children. Flexbox is also available in standard CSS styles definition for web interfaces.
+To this end, we will use the most popular package for validation in React and React Native projects named Formik. See the general docs for Formik React <https://formik.org/docs/overview> and the guide for using it in React-native <https://formik.org/docs/guides/react-native>.
 
-For instance, within a `View` component we can include some children, such as `Text`, `Pressable`, `Image`, `InputItems` or nested `View`. The parent `View` can define the Flexbox behaviour of these children (children of these children do not inherit these properties). The most common properties to be defined are:
+Validation rules could be handwritten or we can use another package. Formik recommend using Yup package for schema validation rules. These can include various rules such as: required, email, strings, numbers, dates or default values. See documentation of Yup package <https://github.com/jquense/yup>.
 
-- `flexDirection` which can take two values: `column` (default) if we want its children to render vertically or `row` if we want them to be rendered horizontally. Check
-- `justifyContent` which can take the following values:
-  - `flex-start` (default). The contents are distributed at the start of the primary axis (the flex direction determines the primary and secondary axis)
-  - `center`. The contents are distributed at the center.
-  - `flex-end`. The contents are distributed at the end.
-  - `space-around` and `space-between` so the contentes are distributed evenly.
-- `alignItems` define how the content will be aligned along the secondary axis (depending on the `flexDirection`)
-  - `flex-start`,
-  - `center`,
-  - `flex-end`,
-  - `stretch` (default) contents will be stretched to fill the space available
+We will include the validation for the `CreateRestaurantScreen` form by following these steps:
 
-You can experiment with these properties and values at the following example:
-<https://snack.expo.dev/@afdez/flex-example>
-
-Please, take your time to understand the behaviour of Flexbox algorithm.
-
-There are some more properties that defines the Flexbox algorithm behaviour, you can learn more at: <https://reactnative.dev/docs/flexbox>
-
-## 1.2. Views as containers
-
-Usually we will define a general container for our components. This container will usually be a `View` component and it will determine the Flexbox behaviour of its children and the size, margins etc where we will render our elements.
-Notice that the return statement must include one and only one root element. For instance this return statement would be wrong:
-
-```JSX
-return (
-  <View>
-    <Text>Some text</Text>
-  </View>
-  <View>
-    <Text>Some other text</Text>
-  </View>
-)
-```
-
-To fix this, we must include a parent element to those siblings,for instance the empty tag `<>`:
-
-```JSX
-return (
-  <>
-    <View>
-      <Text>Some text</Text>
-    </View>
-    <View>
-      <Text>Some other text</Text>
-    </View>
-  </>
-)
-```
-
-Let's start designing the `CreateRestaurantScreen.js`.
-
-1. Include a `<View style={{ alignItems: 'center' }}>`
-2. Insert some `<InputItem name='sampleInput' label='Sample input' />`
-3. Check results.
-
-You will notice that the input items are arranged from top to bottom, full width.
-
-4. Let's modify our container, so it does not fill all the horizontal space, just 60%. To this end we will create a **nested** view width 60%: `<View style={{ width: '60%' }}>`
-5. Check results
-6. Include a `Pressable` button after the set of inputs.
-7. Check results.
-
-The following code snippet, includes all the previous steps:
-
-```JSX
-export default function CreateRestaurantScreen () {
-  return (
-    <View style={{ alignItems: 'center' }}>
-      <View style={{ width: '60%' }}>
-      <InputItem
-        name='sampleInput'
-        label='Sample input'
-      />
-      <InputItem
-        name='sampleInput'
-        label='Sample input'
-      />
-      <InputItem
-        name='sampleInput'
-        label='Sample input'
-      />
-      <InputItem
-        name='sampleInput'
-        label='Sample input'
-      />
-      <InputItem
-        name='sampleInput'
-        label='Sample input'
-      />
-      <InputItem
-        name='sampleInput'
-        label='Sample input'
-      />
-      <InputItem
-        name='sampleInput'
-        label='Sample input'
-      />
-      <InputItem
-        name='sampleInput'
-        label='Sample input'
-      />
-      <Pressable
-        onPress={() => console.log('Button pressed')
-        }
-        style={({ pressed }) => [
-          {
-            backgroundColor: pressed
-              ? GlobalStyles.brandPrimaryTap
-              : GlobalStyles.brandPrimary
-          },
-          styles.button
-        ]}>
-        <TextRegular textStyle={styles.text}>
-          Create restaurant
-        </TextRegular>
-      </Pressable>
-      </View>
-    </View>
-  )
-}
-
-const styles = StyleSheet.create({
-  button: {
-    borderRadius: 8,
-    height: 40,
-    padding: 10,
-    width: '100%',
-    marginTop: 20,
-    marginBottom: 20
-  },
-  text: {
-    fontSize: 16,
-    color: GlobalStyles.brandSecondary,
-    textAlign: 'center'
-  }
-})
-```
-
-You may ask yourself: why was it needed to include two nested views? The reason is that the first view defines that its children have to be centered. You can check what happens if we declare just a view with both properties: `<View style={{ alignItems: 'center', width: '60%' }}>`.
-Layout definition can be quite tricky sometimes, and various solutions can be found: for instance there is another property named `alignSelf`, that could have been used to this end.
-
-## 1.3. ScrollViews
-
-Insert more `InputItems` so they exceed the vertical space available. Notice that you cannot scroll down to see them all. `Views` are not scrollable. To this end we have to use the `<ScrollView>` component. Add a new `<ScrollView>` parent and check results. Scrolling should be enabled.
-
-Note: Some components are an extension of `ScrollView` component. For instance, `FlatList` inherits the properties of `ScrollView`, but load contents lazily (when you have to render lots of elements, `FlatList` will be a more performant solution than `ScrollView`).
-
-# 2. Forms
-
-Forms are the way of alowing users to submit data from the frontend GUI to the backend. This is needed to create new elements of our entities.
-In order to create and mantain the state of the form, we will use a third party component: `<Formik>`.
-
-Formik manages the state of the inputs within the form, and can apply validation rules to them. Formik component needs to be initialized with the names and initial values of the inputs of the form.
-
-We will learn more about Formik in the next lab. In this lab you just have to add the following parent element in the return sentence of the screens that include a form:
-
-```JSX
-import { Formik } from 'formik'
-
-
-export default function CreateRestaurantScreen () {
-  const initialRestaurantValues = { name: null, description: null, address: null, postalCode: null, url: null, shippingCosts: null, email: null, phone: null, restaurantCategoryId: null }
-
-  // Rest of the code of this component
-  // ...
-
-  return (
-    <Formik
-    initialValues={initialRestaurantValues}
-    >
-      {({ setFieldValue, values }) => (
-        <ScrollView>
-          <View style={{ alignItems: 'center' }}>
-            <View style={{ width: '60%' }}>
-              <InputItem
-                name='name'
-                label='Name:'
-              />
-
-              {/* Any other inputs */}
-
-            </View>
-          </View>
-        </ScrollView>
-      )}
-    </Formik>
-  )
-```
-
-Forms present to the user various input fields. The most popular are:
-
-- Text inputs: where user introduces some kind of text. It is usually the most general input, we can use it so users can include information such as: names, surnames, emails, descriptions, urls, addresses, prices, postal codes or telephones. You have been provided the `src/components/InputItem.js` component that returns: a) a `TextInput`, b) a label for the input and c) some elements needed for validation that we will use in the next lab.
-- Image/File pickers: where user can select an image/file from its gallery or file system in order to upload them.
-- Select/Dropdown: where users can select a value for a field from a given set of options. Typical use cases includes: select some category from the ones that exist, select some status value from a given set of possible values.
-- Switches: where user is asked between two options that are typically send as a boolean.
-
-## 2.1 CreateRestaurant Form
-
-### 2.1.1 Text inputs
-
-Modify the CreateRestaurantScreen so the user is presented with the needed text inputs for the creation of new restaurants including:
-
-- `name`
-- `description`
-- `address`
-- `postalCode`
-- `url`
-- `shippingCosts`
-- `email`
-- `phone`
-
-Notice that `InputItem` can receive the following properties:
-
-- `name`: the name of the field. **It has to match the name of the field expected at the backend.**
-- `label`: the text presented to the user so it will be rendered among the text input.
-- Other properties: any other property available for the react-native `TextInput`component. For instance, the `placeholder` property will render a hint in the input so the user can better understand what kind of value is expected. You can see the full `TextInput` reference at: <https://reactnative.dev/docs/textinput>
-
-### 2.1.2 Image pickers
-
-Restaurants can be created including some images, the `logo` and the `heroImage` which is an image that is rendered as background in the RestaurantDetailScreen. To this end, expo SDK includes some tools. For more info you can check the expo documentation: <https://docs.expo.dev/tutorial/image-picker/>
-
-To include an image picker for the restaurant logo follow these steps:
-
-1. Add import sentences for the needed library `ExpoImagePicker`, some components, and some default images:
+1. Complete the import sentences of Formik and ErrorMessage from 'formik', and yup from yup as follows:
 
    ```Javascript
-   import { Image, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native'
-   import * as ExpoImagePicker from 'expo-image-picker'
-   import restaurantLogo from '../../../assets/restaurantLogo.jpeg'
-   import restaurantBackground from '../../../assets/restaurantBackground.jpeg'
+   import { ErrorMessage, Formik } from 'formik'
+   import * as yup from 'yup'
    ```
 
-1. Include a `useEffect` hook to obtain permissions from the device to access to the media gallery (it is needed for iOS and Android).
+1. Keep in mind that Formik needs to be fed with an object of the initial values of the form inputs as follows:. Remember that these names has to match the ones that the backend expects when creating a Restaurant:
 
    ```Javascript
-     useEffect(() => {
-       (async () => {
-         if (Platform.OS !== 'web') {
-           const { status } = await ExpoImagePicker.requestMediaLibraryPermissionsAsync()
-           if (status !== 'granted') {
-             alert('Sorry, we need camera roll permissions to make this work!')
-           }
-         }
-       })()
-     }, [])
+   const initialRestaurantValues = { name: null, description: null, address: null, postalCode: null, url: null, shippingCosts: null, email: null, phone: null, restaurantCategoryId: null }
+
    ```
 
-1. Include a new pressable element including a text for the label and an image for visualizing selected image. Once we press and select an image, we will store its contents in the state variable by using the `setLogo` function. You can use the following code snippet:
+1. Define a new validationSchema object by using yup rules. This validationSchema will be used by Formik to check the validity of the fields. You can use the following code snippet.
+
+   ```Javascript
+   const validationSchema = yup.object().shape({
+   name: yup
+     .string()
+     .max(255, 'Name too long')
+     .required('Name is required'),
+   address: yup
+     .string()
+     .max(255, 'Address too long')
+     .required('Address is required'),
+   postalCode: yup
+     .string()
+     .max(255, 'Postal code too long')
+     .required('Postal code is required'),
+   url: yup
+     .string()
+     .nullable()
+     .url('Please enter a valid url'),
+   shippingCosts: yup
+     .number()
+     .positive('Please provide a valid shipping cost value')
+     .required('Shipping costs value is required'),
+   email: yup
+     .string()
+     .nullable()
+     .email('Please enter a valid email'),
+   phone: yup
+     .string()
+     .nullable()
+     .max(255, 'Phone too long'),
+   restaurantCategoryId: yup
+     .number()
+     .positive()
+     .integer()
+     .required('Restaurant category is required')
+   })
+   ```
+
+   Notice that:
+
+   - There should be a property named after each of the form inputs that needs validation.
+   - Rules defined above include: a type of data that is expected (string, or number for instance), the length of strings, if a number can be negative or not, and if an input is required .
+   - If the field does not follow any of these rules, the message passed to each rule should be shown to the user. For instance, if the shippingCosts is not a positive number, the message _Please provide a valid shipping cost value_ will be shown.
+
+1. Remember that the inputs have to be nested under the `Formik` component. Add the following:
 
    ```JSX
-   <Pressable onPress={() =>
-     pickImage(
-       async result => {
-         await setFieldValue('logo', result)
-       }
-     )
-   }
-     style={styles.imagePicker}
-   >
-     <TextRegular>Logo: </TextRegular>
-     <Image style={styles.image} source={values.logo ? { uri: values.logo.assets[0].uri } : restaurantLogo} />
-   </Pressable>
+   <Formik
+     validationSchema={validationSchema}
+     initialValues={initialRestaurantValues}
+     onSubmit={createRestaurant}>
+     {({ handleSubmit, setFieldValue, values }) => (
+       <ScrollView>
+         /* Your views, form inputs, submit button/pressable */
+       </ScrollView>
+     )}
+   </Formik>
    ```
 
-1. Notice that `onPress` calls the `pickImage`method. This method is in charge of launching the selection interface for picking an image. This is the proposed code extracted from the `ExpoImagePicker` component documentation:
+   It is important to understand how the `Formik` component works. The Formik component is in charge of handling the form values, validation, errors and submission. To this end we have to define the following properties:
 
-   ```Javascript
-   const pickImage = async (onSuccess) => {
-     const result = await ExpoImagePicker.launchImageLibraryAsync({
-       mediaTypes: ExpoImagePicker.MediaTypeOptions.Images,
-       allowsEditing: true,
-       aspect: [1, 1],
-       quality: 1
-     })
-     if (!result.canceled) {
-       if (onSuccess) {
-         onSuccess(result)
-       }
+   - `validationSchema`: the validation rules, usually a yup object.
+   - `initialValues`: the initial values given to each of the form inputs.
+   - `onSubmit`: the function to be called when the inserted form values pass the validation. Usually we will call a function that will be in charge of preparing the data and using a creation endpoint for the entity. We will learn hoy to POST data to the backend later. At this moment we will just print the values in console.
+
+     ```Javascript
+     const createRestaurant = async (values) => {
+       //later we will call a method to perform a POST request
+       console.log(values)
      }
-   }
-   ```
+     ```
 
-1. Finally, we can include some styling:
+   - `handleSubmit`: is the function that triggers the validation. It has to be called when the user presses the submission button.
+   - `values`: is the array of elements that represents the state of the form.
+   - `setFieldValue`: sometimes we will have to manually handle the storage of field values. This is a function that receives as first parameter the name of the field, and as second parameter the value for that field. It will be needed for non standard `InputItems` such as `Imagepickers` or `Dropdown/select` input controls.
 
-   ```Javascript
-   imagePicker: {
-     height: 40,
-     paddingLeft: 10,
-     marginTop: 20,
-     marginBottom: 80
-   },
-   image: {
-     width: 100,
-     height: 100,
-     borderWidth: 1,
-     alignSelf: 'center',
-     marginTop: 5
-   }
-   ```
+1. Next, we need to modify the behaviour of some components so they use the values object properties handled by `Formik`.
 
-### 2.1.4. CreateRestaurantScreen.js
+   - Modify the `DropDownPicker` so the following properties are defined as:
 
-<details>
-  <summary>
-Click here to check the complete CreateRestaurantScreen component:
-  </summary>
+     ```JSX
+     <DropDownPicker
+       open={open}
+       value={values.restaurantCategoryId}
+       items={restaurantCategories}
+       setOpen={setOpen}
+       onSelectItem={ item => {
+         setFieldValue('restaurantCategoryId', item.value)
+       }}
+       setItems={setRestaurantCategories}
+       placeholder='Select the restaurant category'
+       containerStyle={{ height: 40, marginTop: 20 }}
+       style={{ backgroundColor: GlobalStyles.brandBackground }}
+       dropDownStyle={{ backgroundColor: '#fafafa' }}
+     />
+     ```
 
-```JSX
-import React, { useEffect, useState } from 'react'
-import { Image, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native'
-import * as ExpoImagePicker from 'expo-image-picker'
-import { MaterialCommunityIcons } from '@expo/vector-icons'
+   - `InputItem` is a component the includes the error handling. However, non-standard input controls from 3rd parties don't handle `Formik` errors. For instance, `Dropdown picker` does not handle these errors, so add the following `<ErrorMessage>` component following the dropdown picker:
 
-import { getRestaurantCategories } from '../../api/RestaurantEndpoints'
-import InputItem from '../../components/InputItem'
-import TextRegular from '../../components/TextRegular'
-import * as GlobalStyles from '../../styles/GlobalStyles'
-import restaurantLogo from '../../../assets/restaurantLogo.jpeg'
-import restaurantBackground from '../../../assets/restaurantBackground.jpeg'
-import { showMessage } from 'react-native-flash-message'
-import { Formik } from 'formik'
+     ```JSX
+     <ErrorMessage name={'restaurantCategoryId'} render={msg => <TextError>{msg}</TextError> }/>
+     ```
 
-export default function CreateRestaurantScreen () {
-  const initialRestaurantValues = { name: null, description: null, address: null, postalCode: null, url: null, shippingCosts: null, email: null, phone: null, restaurantCategoryId: null }
+   - Modify the `Imagepickers` as follows (example for `logo` image picker):
 
-  useEffect(() => {
-    (async () => {
-      if (Platform.OS !== 'web') {
-        const { status } = await ExpoImagePicker.requestMediaLibraryPermissionsAsync()
-        if (status !== 'granted') {
-          alert('Sorry, we need camera roll permissions to make this work!')
+     ```JSX
+     <Pressable
+       onPress={() =>
+         pickImage(
+           async result => {
+             await setFieldValue('logo', result)
+           }
+         )
+       }
+       style={styles.imagePicker}
+     >
+       <TextRegular>Logo: </TextRegular>
+       <Image style={styles.image} source={values.logo ? { uri: values.logo.assets[0].uri } : restaurantLogo} />
+     </Pressable>
+     ```
+
+   and apply similar modification to the `heroImage` `ImagePicker`.
+
+1. Next, we need to modify the final `<Pressable>` component to call the `handleSubmit` method. Modify the `onPress` handler definition: `onPress={handleSubmit}`
+
+Check that the validation now works and shows to the user the validation rules broken. Notice that these errors are handled and rendered in the `InputItem` component provided, or the `ErrorMessage` added after the `DropdownPicker`.
+
+Fill the form with valid values and check if they are printed in the console when pressing the last `pressable` labeled with _Save_.
+
+# 2. POST Request to create a restaurant
+
+Backend provides a POST endpoint to create a restaurant. Notice that handling of images and files is already solved at frontend and backend in various provided artifacts. To include the POST request to your project, you can follow these steps:
+
+1.  Add new endpoint
+    In order to create a restaurant, we have to perform a POST request to `/restaurants`. `ApiRequestHelper` includes a `post` function that help us with this, we just need to provide the route and the data to be posted. To this end, include the following at the `RestaurantEndpoints.js` file:
+
+        ```Javascript
+        function create (data) {
+          return post('restaurants', data)
+        }
+        ```
+
+        Remember to import the `post` function from `ApiRequestHelper` and export the create function as well.
+
+1.  Implement `createRestaurant` function at `CreateRestaurantScreen.js` file.
+    In the previous exercise we just printed the values in the console. Now we need to make the API POST request. To this end keep in mind that:
+
+    - Errors can occur at backend, so we need to handle the backend response to check if some errors ocurred.
+    - I/O operations can freeze the interface so we need to handle with promises. The cleanest way of doing so is to declare the function `async` and using `await` when calling to the API.
+    - Once the restaurant is created we may navigate to the `RestaurantsScreen`. You will need to declare the {route} param at the component level, and you will need to navigate including some information, so the RestaurantScreen will refresh the restaurant list and therefore the newly created restaurant is listed.
+      To address these issues, we propose the following code snippet:
+
+      ```Javascript
+      const createRestaurant = async (values) => {
+        setBackendErrors([])
+        try {
+          const createdRestaurant = await create(values)
+          showMessage({
+            message: `Restaurant ${createdRestaurant.name} succesfully created`,
+            type: 'success',
+            style: GlobalStyles.flashStyle,
+            titleStyle: GlobalStyles.flashTextStyle
+          })
+          navigation.navigate('RestaurantsScreen', { dirty: true })
+        } catch (error) {
+          console.log(error)
+          setBackendErrors(error.errors)
         }
       }
-    })()
-  }, [])
+      ```
 
-  const pickImage = async (onSuccess) => {
-    const result = await ExpoImagePicker.launchImageLibraryAsync({
-      mediaTypes: ExpoImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 1
-    })
-    if (!result.canceled) {
-      if (onSuccess) {
-        onSuccess(result)
-      }
+    Moreover, we will need to store backend errors that eventually are returned in a state variable:
+
+    ```Javascript
+    const [backendErrors, setBackendErrors] = useState()
+    ```
+
+    And finally, we will need to show backendErrors if present. To do so, we can add the following at the end of the form, just before the _Save_ last `Pressable`:
+
+    ```JSX
+    {backendErrors &&
+      backendErrors.map((error, index) => <TextError key={index}>{error.msg}</TextError>)
     }
-  }
+    ```
 
-  return (
-    <Formik
-    initialValues={initialRestaurantValues}
-    >
-      {({ setFieldValue, values }) => (
-        <ScrollView>
-          <View style={{ alignItems: 'center' }}>
-            <View style={{ width: '60%' }}>
-              <InputItem
-                name='name'
-                label='Name:'
-              />
-              <InputItem
-                name='description'
-                label='Description:'
-              />
-              <InputItem
-                name='address'
-                label='Address:'
-              />
-              <InputItem
-                name='postalCode'
-                label='Postal code:'
-              />
-              <InputItem
-                name='url'
-                label='Url:'
-              />
-              <InputItem
-                name='shippingCosts'
-                label='Shipping costs:'
-              />
-              <InputItem
-                name='email'
-                label='Email:'
-              />
-              <InputItem
-                name='phone'
-                label='Phone:'
-              />
+    See the _Annex: Conditional Rendering_ for an explanation on the code above.
 
-              <Pressable onPress={() =>
-                pickImage(
-                  async result => {
-                    await setFieldValue('logo', result)
-                  }
-                )
-              }
-                style={styles.imagePicker}
-              >
-                <TextRegular>Logo: </TextRegular>
-                <Image style={styles.image} source={values.logo ? { uri: values.logo.assets[0].uri } : restaurantLogo} />
-              </Pressable>
+At `RestaurantsScreen`, we need to add the {route} as a component prop, and add another trigger value to the `useEffect` that queries the restaurant list. At the moment it was triggered if `loggedInUser` was changed, now add the route param as follows:
+`[loggedInUser, route]`
 
-              <Pressable onPress={() =>
-                pickImage(
-                  async result => {
-                    await setFieldValue('heroImage', result)
-                  }
-                )
-              }
-                style={styles.imagePicker}
-              >
-                <TextRegular>Hero image: </TextRegular>
-                <Image style={styles.image} source={values.heroImage ? { uri: values.heroImage.assets[0].uri } : restaurantBackground} />
-              </Pressable>
+Test the complete solution.
 
-              <Pressable
-                onPress={() => console.log('Submit pressed')}
-                style={({ pressed }) => [
-                  {
-                    backgroundColor: pressed
-                      ? GlobalStyles.brandSuccessTap
-                      : GlobalStyles.brandSuccess
-                  },
-                  styles.button
-                ]}>
-              <View style={[{ flex: 1, flexDirection: 'row', justifyContent: 'center' }]}>
-                <MaterialCommunityIcons name='content-save' color={'white'} size={20}/>
-                <TextRegular textStyle={styles.text}>
-                  Save
-                </TextRegular>
-              </View>
-              </Pressable>
-            </View>
-          </View>
-        </ScrollView>
-      )}
-    </Formik>
-  )
-}
+# 3. Create product validation and POST
 
-const styles = StyleSheet.create({
-  button: {
-    borderRadius: 8,
-    height: 40,
-    padding: 10,
-    width: '100%',
-    marginTop: 20,
-    marginBottom: 20
-  },
-  text: {
-    fontSize: 16,
-    color: 'white',
-    textAlign: 'center',
-    marginLeft: 5
-  },
-  imagePicker: {
-    height: 40,
-    paddingLeft: 10,
-    marginTop: 20,
-    marginBottom: 80
-  },
-  image: {
-    width: 100,
-    height: 100,
-    borderWidth: 1,
-    alignSelf: 'center',
-    marginTop: 5
-  }
-})
-```
+Follow the same steps to validate the create product form and to perform the post request.
 
-</details>
+Notice that when creating a new product, we will need to include the `restaurantId` where it belongs. This restaurant id should be received as: `route.params.id` when navigating from `RestaurantDetailScreen` to the `CreateProductScreen`.
 
-## 2.2. CreateProduct Form
+# 4. Extra: Component refactoring
 
-Now, follow and adapt the steps given for the `CreateRestaurantScreen` component in order to create a new product for a selected restaurant. Complete the `CreateProductScreen.js` component. Remember the needed properties when creating a product:
+Discuss with your teacher and partners if some components could be refactored. Is it possible to create a submit button component so that we don't copy/paste all the pressable details? Do you identify other elements that could be refactored as custom components and reused after?
 
-- `name`,
-- `description`,
-- `price`,
-- `image`,
-- `order` (remember, we can define the position where each product will be in the returned product list when querying restaurant details),
-- `productCategory`,
-- `availability`
+Could it be possible to refactor de `DropdownPicker` and its error message?
 
-# 3. Other form input components
+# Annex: conditional rendering in JSX
 
-Restaurants and products can belong to some categories. Include a select input to allow the user to select from available values of RestaurantCategories and from valid statuses when creating a new restaurant.
-
-### 3.1 Select/Dropdown picker
-
-React native does not provide a Dropdown picker component, so we will use a third party component. You can check the documentation at: <https://hossein-zare.github.io/react-native-dropdown-picker-website/>
-
-In the `CreateRestaurantScreen` form we will use the dropdown to select the restaurant category.
-
-Remember that the options of `DropDownPicker` are a list of pairs value/label. For instance the restaurant categories would be the pair `value: restaurantCategoryId, label: restaurantCategoryName`.
-
-In order to populate the options of the `DropDownPicker` we need:
-
-1. Import the `DropDownPicker`component:
-
-   ```Javascript
-   import DropDownPicker from 'react-native-dropdown-picker'
-   ```
-
-1. A state to store the restaurant categories:
-
-   ```Javascript
-   const [restaurantCategories, setRestaurantCategories] = useState([])
-   ```
-
-1. A boolean state to set if the option list of the `DropDownPicker` are visible or not:
-
-   ```Javascript
-   const [open, setOpen] = useState(false)
-   ```
-
-1. A `useEffect` hook to retrieve the restaurant categories from backend:
-
-   ```Javascript
-   useEffect(() => {
-     async function fetchRestaurantCategories () {
-       try {
-         const fetchedRestaurantCategories = await getRestaurantCategories()
-         const fetchedRestaurantCategoriesReshaped = fetchedRestaurantCategories.map((e) => {
-           return {
-             label: e.name,
-             value: e.id
-           }
-         })
-         setRestaurantCategories(fetchedRestaurantCategoriesReshaped)
-       } catch (error) {
-         showMessage({
-           message: `There was an error while retrieving restaurant categories. ${error} `,
-           type: 'error',
-           style: GlobalStyles.flashStyle,
-           titleStyle: GlobalStyles.flashTextStyle
-         })
-       }
-     }
-     fetchRestaurantCategories()
-   }, [])
-   ```
-
-1. Finally, we have to add the component in the `return` sentence of the `CreateRestaurantScreen` component. Find below a code snippet to add a `DropDownPicker` component for restaurant categories:
-
-   ```JSX
-   <DropDownPicker
-     open={open}
-     value={values.restaurantCategoryId}
-     items={restaurantCategories}
-     setOpen={setOpen}
-     onSelectItem={ item => {
-       setFieldValue('restaurantCategoryId', item.value)
-     }}
-     setItems={setRestaurantCategories}
-     placeholder="Select the restaurant category"
-     containerStyle={{ height: 40, marginTop: 20 }}
-     style={{ backgroundColor: GlobalStyles.brandBackground }}
-     dropDownStyle={{ backgroundColor: '#fafafa' }}
-   />
-   ```
-
-Similarly, when creating a new product, include a select input to select from ProductCategories.
-
-### 3.2. Switch
-
-Moreover, products can be available or not, we can add a radio or switch control to the `CreateProduct` Form. React native provides a Switch component. You can check the documentation at: <https://reactnative.dev/docs/switch>
-
-First, you have to add the `Switch` component to the import statement of the react-native components:
+Sometimes it is necessary to show a content depending on some conditions. To do this, it is possible to enter boolean conditions in the render method (return) of the component. Before the conditioned block prepend the condition followed by &&. Such block will only be rendered when the condition resolves to _truthy_.
 
 ```Javascript
-import { Image, Platform, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native'
+return (
+   // some JSX elements
+   { backendErrors &&
+        backendErrors.map((error, index) => <TextError key={index}>{error.msg}</TextError>)
+   }
+)
 ```
 
-Find below a code snippet for including a `Switch` component for the product availability:
-
-```JSX
-<TextRegular style={styles.switch}>Is it available?</TextRegular>
-<Switch
-  trackColor={{ false: GlobalStyles.brandSecondary, true: GlobalStyles.brandPrimary }}
-  thumbColor={values.availability ? GlobalStyles.brandSecondary : '#f4f3f4'}
-  value={values.availability}
-  style={styles.switch}
-  onValueChange={value =>
-    setFieldValue('availability', value)
-  }
-/>
-```
-
-And you can add some styling to your StyleSheet:
-
-```Javascript
-switch: {
-  marginTop: 20
-}
-```
+The expression `backendErrors && ...` checks that the the variable is _truthy_ or not and therefore, errors will only be rendered when backendErrors is not undefined nor null.
