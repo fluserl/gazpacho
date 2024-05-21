@@ -88,7 +88,31 @@ const indexRestaurant = async function (req, res) {
 // Orders have to include products that belongs to each order and restaurant details
 // sort them by createdAt date, desc.
 const indexCustomer = async function (req, res) {
-  res.status(500).send('This function is to be implemented')
+  try {
+    const orders = await Order.findAll({
+      where: { userId: req.user.id },
+      include: [{
+        model: Restaurant,
+        as: 'restaurant',
+        attributes: ['id', 'name', 'description', 'address', 'postalCode', 'url', 'shippingCosts', 'averageServiceMinutes', 'email', 'phone', 'logo', 'heroImage', 'status', 'restaurantCategoryId']
+      },
+      {
+        model: User,
+        as: 'user',
+        attributes: ['id', 'firstName', 'email', 'avatar', 'userType']
+      },
+      {
+        model: Product,
+        as: 'products'
+      }],
+      order: [
+        ['createdAt', 'DESC']
+      ]
+    })
+    res.json(orders)
+  } catch (err) {
+    res.status(500).send(err)
+  }
 }
 
 // TODO: Implement the create function that receives a new order and stores it in the database.
@@ -100,7 +124,61 @@ const indexCustomer = async function (req, res) {
 
 const create = async (req, res) => {
   // Use sequelizeSession to start a transaction
-  res.status(500).send('This function is to be implemented')
+  try {
+    const orderItems = req.body.products
+    const products = await Product.findAll({
+      where: {
+        id: orderItems.map(p => p.productId)
+      }
+    })
+    let totalPrice = 0
+    orderItems.forEach(orderItem => {
+      const product = products.find(p => p.id === orderItem.productId)
+      if (product) totalPrice += product.price * orderItem.quantity
+      orderItem.unityPrice = product.price
+    })
+
+    const restaurant = await Restaurant.findByPk(
+      req.body.restaurantId
+    )
+
+    const shippingCosts = totalPrice > 10 ? 0 : restaurant.shippingCosts
+    totalPrice += shippingCosts
+
+    await sequelizeSession.transaction(async t => {
+      const order = await Order.create({
+        address: req.body.address,
+        restaurantId: req.body.restaurantId,
+        shippingCosts,
+        userId: req.user.id,
+        price: totalPrice,
+        deliveredAt: req.body.deliveredAt,
+        sentAt: req.body.sentAt,
+        startedAt: req.body.startedAt
+      },
+      {
+        transaction: t
+      })
+      await Promise.all(orderItems.map(async item => {
+        await order.addProduct(item.productId,
+          {
+            through: { quantity: item.quantity, unityPrice: item.unityPrice, ProductId: item.productId },
+            transaction: t
+          })
+      }))
+      await order.reload({
+        include: [
+          {
+            model: Product,
+            as: 'products'
+          }],
+        transaction: t
+      })
+      res.status(200).send(order)
+    })
+  } catch (err) {
+    res.status(500).send(err)
+  }
 }
 
 // TODO: Implement the update function that receives a modified order and persists it in the database.
@@ -111,14 +189,84 @@ const create = async (req, res) => {
 // 4. If an exception is raised, catch it and rollback the transaction
 const update = async function (req, res) {
   // Use sequelizeSession to start a transaction
-  res.status(500).send('This function is to be implemented')
+  try {
+    const orderItems = req.body.products
+    const order = await Order.findByPk(req.params.orderId,
+      {
+        include: [{
+          model: Restaurant,
+          as: 'restaurant'
+        }]
+      })
+
+    const products = await Product.findAll({
+      where: {
+        id: req.body.products.map(p => p.productId)
+      }
+    })
+    let totalPrice = 0
+    orderItems.forEach(orderItem => {
+      const product = products.find(p => p.id === orderItem.productId)
+      if (product) totalPrice += product.price * orderItem.quantity
+      orderItem.unityPrice = product.price
+    })
+
+    const restaurant = order.restaurant
+
+    const shippingCosts = totalPrice > 10 ? 0 : restaurant.shippingCosts
+    totalPrice += shippingCosts
+
+    order.shippingCosts = shippingCosts
+    order.address = req.body.address
+    order.price = totalPrice
+    order.deliveredAt = req.body.deliveredAt
+    order.sentAt = req.body.sentAt
+    order.startedAt = req.body.startedAt
+
+    await sequelizeSession.transaction(async t => {
+      await order.save({ transaction: t })
+      await order.setProducts([], { transaction: t })
+      await Promise.all(orderItems.map(async item => {
+        await order.addProduct(item.productId,
+          {
+            through: { quantity: item.quantity, unityPrice: item.unityPrice, ProductId: item.productId },
+            transaction: t
+          })
+      }))
+      await order.reload({
+        include: [
+          {
+            model: Product,
+            as: 'products'
+          }],
+        transaction: t
+      })
+      res.status(200).send(order)
+    })
+  } catch (err) {
+    res.status(500).send(err)
+  }
 }
 
 // TODO: Implement the destroy function that receives an orderId as path param and removes the associated order from the database.
 // Take into account that:
 // 1. The migration include the "ON DELETE CASCADE" directive so OrderProducts related to this order will be automatically removed.
 const destroy = async function (req, res) {
-  res.status(500).send('This function is to be implemented')
+  try {
+    const orderId = req.params.orderId
+    // Use sequelizeSession to start a transaction
+    await sequelizeSession.transaction(async t => {
+      const order = await Order.findByPk(orderId, { transaction: t })
+      if (!order) {
+        throw new Error('Orden no encontrada')
+      }
+      // Borra la order
+      await order.destroy({ transaction: t })
+      res.status(200).send('Orden borrada')
+    })
+  } catch (err) {
+    res.status(500).send('Error al borrar la orden')
+  }
 }
 
 const confirm = async function (req, res) {
