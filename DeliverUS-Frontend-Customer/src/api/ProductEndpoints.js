@@ -4,4 +4,8 @@ function getProductCategories () {
   return get('productCategories')
 }
 
-export { getProductCategories }
+function getPopular () {
+  return get('/products/popular')
+}
+
+export { getProductCategories, getPopular }

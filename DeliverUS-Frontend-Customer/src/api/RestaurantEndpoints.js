@@ -1,6 +1,6 @@
 import { get } from './helpers/ApiRequestsHelper'
 function getAll () {
-  return get('users/myrestaurants')
+  return get('restaurants') // Antes estaba users/myrestaurants pero esa ruta no existe
 }
 
 function getDetail (id) {

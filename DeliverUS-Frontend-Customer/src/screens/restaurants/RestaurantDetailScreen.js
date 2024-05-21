@@ -1,6 +1,6 @@
 /* eslint-disable react/prop-types */
-import React, { useEffect, useState } from 'react'
-import { StyleSheet, View, FlatList, ImageBackground, Image } from 'react-native'
+import React, { useContext, useEffect, useState } from 'react'
+import { StyleSheet, View, FlatList, ImageBackground, Image, Pressable } from 'react-native'
 import { showMessage } from 'react-native-flash-message'
 import { getDetail } from '../../api/RestaurantEndpoints'
 import ImageCard from '../../components/ImageCard'
@@ -9,24 +9,29 @@ import TextSemiBold from '../../components/TextSemibold'
 import * as GlobalStyles from '../../styles/GlobalStyles'
 import defaultProductImage from '../../../assets/product.jpeg'
 
+import { AuthorizationContext } from '../../context/AuthorizationContext'
+import { MaterialCommunityIcons, Fontisto } from '@expo/vector-icons'
+
+/*
+  FR2: Restaurants details and menu.
+    Customers will be able to query restaurants details and the products offered by them.
+  FR3: Add, edit and remove products to a new order.
+    A customer can add several products, and several units of a product to a new order. Before confirming, customer can edit and remove products. Once the order is confirmed, it cannot be edited or removed.
+  FR4: Confirm or dismiss new order.
+    Customers will be able to confirm or dismiss the order before sending it to the backend.
+ */
+
 export default function RestaurantDetailScreen ({ navigation, route }) {
   const [restaurant, setRestaurant] = useState({})
+  const { loggedInUser } = useContext(AuthorizationContext)
 
   useEffect(() => {
     fetchRestaurantDetail()
-  }, [route])
+  }, [loggedInUser, route])
 
   const renderHeader = () => {
     return (
       <View>
-        <View style={styles.FRHeader}>
-          <TextSemiBold>FR2: Restaurants details and menu.</TextSemiBold>
-          <TextRegular>Customers will be able to query restaurants details and the products offered by them.</TextRegular>
-          <TextSemiBold>FR3: Add, edit and remove products to a new order.</TextSemiBold>
-          <TextRegular>A customer can add several products, and several units of a product to a new order. Before confirming, customer can edit and remove products. Once the order is confirmed, it cannot be edited or removed.</TextRegular>
-          <TextSemiBold>FR4: Confirm or dismiss new order.</TextSemiBold>
-          <TextRegular>Customers will be able to confirm or dismiss the order before sending it to the backend.</TextRegular>
-        </View>
         <ImageBackground source={(restaurant?.heroImage) ? { uri: process.env.API_BASE_URL + '/' + restaurant.heroImage, cache: 'force-cache' } : undefined} style={styles.imageBackground}>
           <View style={styles.restaurantHeaderContainer}>
             <TextSemiBold textStyle={styles.textTitle}>{restaurant.name}</TextSemiBold>
@@ -54,6 +59,47 @@ export default function RestaurantDetailScreen ({ navigation, route }) {
     )
   }
 
+  const renderProductLoggedIn = ({ item }) => {
+    if (item.availability) {
+      return (
+        <ImageCard
+          imageUri={item.image ? { uri: process.env.API_BASE_URL + '/' + item.image } : defaultProductImage}
+          title={item.name}
+        >
+          <TextRegular numberOfLines={2}>{item.description}</TextRegular>
+          <TextSemiBold textStyle={styles.price}>{item.price.toFixed(2)}€</TextSemiBold>
+          {!item.availability &&
+            <TextRegular textStyle={styles.availability }>Not available</TextRegular>
+          }
+          <Pressable
+              onPress={() => navigation.navigate('CreateOrderScreen', { id: restaurant.id })}
+              style={({ pressed }) => [
+                {
+                  backgroundColor: pressed
+                    ? GlobalStyles.brandBlueTap
+                    : GlobalStyles.brandBlue
+                },
+                styles.actionButton
+              ]}>
+            <View style={[{ flex: 1, flexDirection: 'row', justifyContent: 'center' }]}>
+              <Fontisto name="shopping-basket-add" size={20} color="white" />
+              <TextRegular textStyle={styles.text}>
+                Order
+              </TextRegular>
+            </View>
+          </Pressable>
+        </ImageCard>
+      )
+    } else {
+      <ImageCard
+          imageUri={item.image ? { uri: process.env.API_BASE_URL + '/' + item.image } : defaultProductImage}
+          title={item.name}
+        >
+          <TextRegular textStyle={styles.availability }>Not available</TextRegular>
+        </ImageCard>
+    }
+  }
+
   const renderEmptyProductsList = () => {
     return (
       <TextRegular textStyle={styles.emptyList}>
@@ -76,8 +122,26 @@ export default function RestaurantDetailScreen ({ navigation, route }) {
     }
   }
 
-  return (
-      <FlatList
+  return (!loggedInUser
+    ? <View style={{ flex: 1 }}>
+      <Pressable
+            onPress={() => navigation.navigate('Profile')}
+            style={({ pressed }) => [
+              {
+                backgroundColor: pressed
+                  ? GlobalStyles.brandBlueTap
+                  : GlobalStyles.brandBlue
+              },
+              styles.actionButton
+            ]}>
+          <View style={[{ flex: 1, flexDirection: 'row', justifyContent: 'center' }]}>
+            <MaterialCommunityIcons name='account-circle' color={'white'} size={20}/>
+            <TextRegular textStyle={styles.text}>
+              Log in to make a new order
+            </TextRegular>
+          </View>
+        </Pressable>
+    <FlatList
           ListHeaderComponent={renderHeader}
           ListEmptyComponent={renderEmptyProductsList}
           style={styles.container}
@@ -85,18 +149,19 @@ export default function RestaurantDetailScreen ({ navigation, route }) {
           renderItem={renderProduct}
           keyExtractor={item => item.id.toString()}
         />
+    </View>
+    : <FlatList
+      ListHeaderComponent={renderHeader}
+      ListEmptyComponent={renderEmptyProductsList}
+      style={styles.container}
+      data={restaurant.products}
+      renderItem={renderProductLoggedIn}
+      keyExtractor={item => item.id.toString()}
+    />
   )
 }
 
 const styles = StyleSheet.create({
-  FRHeader: { // TODO: remove this style and the related <View>. Only for clarification purposes
-    justifyContent: 'center',
-    alignItems: 'left',
-    margin: 50
-  },
-  container: {
-    flex: 1
-  },
   row: {
     padding: 15,
     marginBottom: 5,
